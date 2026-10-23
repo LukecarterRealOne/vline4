@@ -1,0 +1,82 @@
+name: Build VLine Practice Tools
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Locate project source
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f build.gradle && -f settings.gradle ]]; then
+            echo "Project files found in repository root."
+          else
+            archive=""
+            shopt -s nullglob
+            for candidate in ./*.zip; do
+              entries="$(unzip -Z1 "$candidate" 2>/dev/null || true)"
+              if grep -Fxq 'build.gradle' <<< "$entries" \
+                && grep -Fxq 'settings.gradle' <<< "$entries" \
+                && grep -Fxq 'src/client/java/com/vlineaim/training/VLineTrainingClient.java' <<< "$entries"; then
+                archive="$candidate"
+                break
+              fi
+            done
+            if [[ -z "$archive" ]]; then
+              echo "::error::No VLine Practice Tools source found. Put the extracted project files at the repository root, or upload this project's ZIP there."
+              ls -la
+              exit 1
+            fi
+            tmp="$(mktemp -d)"
+            unzip -q "$archive" -d "$tmp"
+            cp -a "$tmp"/. ./
+            rm -rf "$tmp"
+          fi
+          test -f src/main/resources/fabric.mod.json
+          test -f src/client/java/com/vlineaim/training/VLineTrainingClient.java
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.7.1'
+
+      - name: Build mod
+        run: gradle --no-daemon --no-configuration-cache clean build
+
+      - name: Show distributable JARs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t jars < <(find build/libs -maxdepth 1 -type f -name '*.jar' \
+            ! -name '*-sources.jar' ! -name '*-javadoc.jar' ! -name '*-dev.jar' -print | sort)
+          if [[ ${#jars[@]} -eq 0 ]]; then
+            echo "::error::No mod JAR was created in build/libs/."
+            find build/libs -maxdepth 1 -type f -print || true
+            exit 1
+          fi
+          printf 'Built: %s\n' "${jars[@]}"
+
+      - name: Upload mod artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vline-practice-tools-minecraft-26.1.2
+          path: build/libs/*.jar
+          if-no-files-found: error
+          retention-days: 14
