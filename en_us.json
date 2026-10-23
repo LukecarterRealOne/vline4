@@ -1,0 +1,6 @@
+{
+  "key.category.vline_training.training": "VLine Practice Tools",
+  "key.vline_training.hitboxes": "Toggle hitbox display (offline only)",
+  "key.vline_training.proximity": "Toggle proximity alerts (offline only)",
+  "key.vline_training.autohit": "Toggle training auto-hit (mobs only, offline only)"
+}

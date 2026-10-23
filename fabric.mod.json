@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "vline_training",
+  "version": "1.0.0",
+  "name": "VLine Practice Tools",
+  "description": "Visible hitbox and proximity training helpers. Auto-hit is restricted to mobs in offline single-player worlds.",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.vlineaim.training.VLineTrainingClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.1.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
